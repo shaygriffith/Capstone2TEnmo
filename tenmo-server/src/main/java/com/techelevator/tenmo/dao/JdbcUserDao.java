@@ -1,5 +1,6 @@
 package com.techelevator.tenmo.dao;
 
+import com.techelevator.tenmo.model.Account;
 import com.techelevator.tenmo.model.User;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -20,6 +21,17 @@ public class JdbcUserDao implements UserDao {
 
     public JdbcUserDao(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+    }
+
+    @Override
+    public List<User> listSendUsers(Long userId) {
+        List<User> users = new ArrayList<>();
+        String sql = "select * from users where user_id not in (?);";
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, userId);
+        while (results.next()) {
+            users.add(mapRowToUser(results));
+        }
+        return users;
     }
 
     @Override

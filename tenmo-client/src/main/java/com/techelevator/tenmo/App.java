@@ -1,14 +1,25 @@
 package com.techelevator.tenmo;
 
+import com.techelevator.tenmo.model.Account;
 import com.techelevator.tenmo.model.AuthenticatedUser;
+import com.techelevator.tenmo.model.User;
 import com.techelevator.tenmo.model.UserCredentials;
 import com.techelevator.tenmo.services.AuthenticationService;
 import com.techelevator.tenmo.services.AuthenticationServiceException;
 import com.techelevator.view.ConsoleService;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.RestTemplate;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Scanner;
 
 public class App {
 
-private static final String API_BASE_URL = "http://localhost:8080/";
+	private final Scanner userInput = new Scanner(System.in);
+
+    private static final String API_BASE_URL = "http://localhost:8080/";
     
     private static final String MENU_OPTION_EXIT = "Exit";
     private static final String LOGIN_MENU_OPTION_REGISTER = "Register";
@@ -25,9 +36,10 @@ private static final String API_BASE_URL = "http://localhost:8080/";
     private AuthenticatedUser currentUser;
     private ConsoleService console;
     private AuthenticationService authenticationService;
+    private static RestTemplate restTemplate;
 
     public static void main(String[] args) {
-    	String test = "";
+    	restTemplate = new RestTemplate();
     	App app = new App(new ConsoleService(System.in, System.out), new AuthenticationService(API_BASE_URL));
     	app.run();
     }
@@ -69,8 +81,17 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 	}
 
 	private void viewCurrentBalance() {
-		// TODO Auto-generated method stub
-		
+		User user = currentUser.getUser();
+		int id = user.getId();
+		Account account = new Account();
+		try {
+			account = restTemplate.getForObject(API_BASE_URL + "/user/" + id + "/balance", Account.class);
+		} catch (RestClientResponseException e) {
+			String.format("%s%s",e.getRawStatusCode(),e.getStatusText());
+		} catch (ResourceAccessException e) {
+			e.getMessage();
+		}
+		System.out.println("Your current account balance is: $" + account.getBalance());
 	}
 
 	private void viewTransferHistory() {
@@ -84,7 +105,31 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 	}
 
 	private void sendBucks() {
-		// TODO Auto-generated method stub
+		System.out.println("-------------------------------------------");
+		System.out.println("Users");
+		System.out.format("%-20s%-20s\n", "ID", "Name");
+		System.out.println("-------------------------------------------");
+		User user = currentUser.getUser();
+		int id = user.getId();
+		User[] userList = restTemplate.getForObject(API_BASE_URL + "/user/" + id + "/sendList", User[].class);
+		for (User u : userList) {
+			System.out.format("%-20s%-20s\n", u.getId(), u.getUsername());
+		}
+		System.out.println("-------------------------------------------");
+		int userInputId;
+		BigDecimal userInputMoney;
+		System.out.print("Enter ID of user you are sending to (0 to cancel): ");
+		String selection = userInput.nextLine();
+		if (selection.equals("0")) {
+			mainMenu();
+		} else {
+			userInputId = Integer.valueOf(selection);
+		}
+		System.out.print("Enter amount: ");
+		selection = userInput.nextLine();
+		double doubleMoney = Double.valueOf(selection);
+		userInputMoney = BigDecimal.valueOf(doubleMoney);
+
 		
 	}
 
