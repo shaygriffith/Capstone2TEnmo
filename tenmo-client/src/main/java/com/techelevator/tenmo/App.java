@@ -1,11 +1,9 @@
 package com.techelevator.tenmo;
 
-import com.techelevator.tenmo.model.Account;
-import com.techelevator.tenmo.model.AuthenticatedUser;
-import com.techelevator.tenmo.model.User;
-import com.techelevator.tenmo.model.UserCredentials;
+import com.techelevator.tenmo.model.*;
 import com.techelevator.tenmo.services.AuthenticationService;
 import com.techelevator.tenmo.services.AuthenticationServiceException;
+import com.techelevator.tenmo.services.BankService;
 import com.techelevator.view.ConsoleService;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientResponseException;
@@ -36,6 +34,7 @@ public class App {
     private AuthenticatedUser currentUser;
     private ConsoleService console;
     private AuthenticationService authenticationService;
+    private BankService bankService = new BankService(API_BASE_URL);
     private static RestTemplate restTemplate;
 
     public static void main(String[] args) {
@@ -83,15 +82,7 @@ public class App {
 	private void viewCurrentBalance() {
 		User user = currentUser.getUser();
 		int id = user.getId();
-		Account account = new Account();
-		try {
-			account = restTemplate.getForObject(API_BASE_URL + "/user/" + id + "/balance", Account.class);
-		} catch (RestClientResponseException e) {
-			String.format("%s%s",e.getRawStatusCode(),e.getStatusText());
-		} catch (ResourceAccessException e) {
-			e.getMessage();
-		}
-		System.out.println("Your current account balance is: $" + account.getBalance());
+		System.out.println("Your current account balance is: $" + bankService.getAccount(id).getBalance());
 	}
 
 	private void viewTransferHistory() {
@@ -109,28 +100,60 @@ public class App {
 		System.out.println("Users");
 		System.out.format("%-20s%-20s\n", "ID", "Name");
 		System.out.println("-------------------------------------------");
+
 		User user = currentUser.getUser();
 		int id = user.getId();
-		User[] userList = restTemplate.getForObject(API_BASE_URL + "/user/" + id + "/sendList", User[].class);
+		User[] userList = bankService.displaySendList(id);
+
 		for (User u : userList) {
 			System.out.format("%-20s%-20s\n", u.getId(), u.getUsername());
 		}
 		System.out.println("-------------------------------------------");
-		int userInputId;
+
+		int userInputId = 0;
 		BigDecimal userInputMoney;
 		System.out.print("Enter ID of user you are sending to (0 to cancel): ");
+
 		String selection = userInput.nextLine();
 		if (selection.equals("0")) {
 			mainMenu();
 		} else {
 			userInputId = Integer.valueOf(selection);
 		}
-		System.out.print("Enter amount: ");
-		selection = userInput.nextLine();
-		double doubleMoney = Double.valueOf(selection);
-		userInputMoney = BigDecimal.valueOf(doubleMoney);
 
-		
+		handleTransferInput(user, id, userInputId);
+	}
+
+	private void handleTransferInput(User user, int id, int userInputId) {
+		String selection;
+		BigDecimal userInputMoney;
+		boolean loop = true;
+		while (loop) {
+			System.out.print("Enter amount: ");
+			selection = userInput.nextLine();
+			double doubleMoney = Double.valueOf(selection);
+			userInputMoney = BigDecimal.valueOf(doubleMoney);
+			if (userInputMoney.compareTo(bankService.getAccount(id).getBalance()) > -1) {
+				System.out.println("Transfer Money greater than the balance. Please input again: ");
+			} else {
+				Transfer transfer = getTransfer(user, id, userInputId, userInputMoney);
+				bankService.sendBucks(transfer);
+				System.out.println("Send Successful!");
+				loop = false;
+			}
+		}
+	}
+
+	private Transfer getTransfer(User user, int id, int userInputId, BigDecimal userInputMoney) {
+		Transfer transfer = new Transfer();
+		transfer.setTransferTypeId(Long.valueOf(2));
+		transfer.setTransferStatusId(Long.valueOf(2));
+		transfer.setFromAccountId(bankService.getAccount(id).getAccount_id());
+		transfer.setToAccountId(bankService.getAccount(userInputId).getAccount_id());
+		transfer.setAmount(userInputMoney);
+		transfer.setFromUserId(Long.valueOf(user.getId()));
+		transfer.setToUserId(Long.valueOf(userInputId));
+		return transfer;
 	}
 
 	private void requestBucks() {
@@ -185,6 +208,7 @@ public class App {
 			UserCredentials credentials = collectUserCredentials();
 		    try {
 				currentUser = authenticationService.login(credentials);
+				bankService.AUTH_TOKEN = currentUser.getToken();
 			} catch (AuthenticationServiceException e) {
 				System.out.println("LOGIN ERROR: "+e.getMessage());
 				System.out.println("Please attempt to login again.");

@@ -3,7 +3,8 @@ package com.techelevator.tenmo.controller;
 import javax.validation.Valid;
 
 import com.techelevator.tenmo.dao.AccountDao;
-import com.techelevator.tenmo.model.Account;
+import com.techelevator.tenmo.dao.TransferDao;
+import com.techelevator.tenmo.model.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -12,9 +13,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.techelevator.tenmo.dao.UserDao;
-import com.techelevator.tenmo.model.LoginDTO;
-import com.techelevator.tenmo.model.RegisterUserDTO;
-import com.techelevator.tenmo.model.User;
 import com.techelevator.tenmo.security.jwt.TokenProvider;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -31,19 +29,25 @@ public class AuthenticationController {
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private UserDao userDao;
     private AccountDao accountDao;
+    private TransferDao transferDao;
 
-    public AuthenticationController(TokenProvider tokenProvider, AuthenticationManagerBuilder authenticationManagerBuilder, UserDao userDao, AccountDao accountDao) {
+    public AuthenticationController(TokenProvider tokenProvider, AuthenticationManagerBuilder authenticationManagerBuilder, UserDao userDao, AccountDao accountDao, TransferDao transferDao) {
         this.tokenProvider = tokenProvider;
         this.authenticationManagerBuilder = authenticationManagerBuilder;
         this.userDao = userDao;
         this.accountDao = accountDao;
+        this.transferDao = transferDao;
     }
 
-    @RequestMapping(value = "/user/{id}/sendList", method = RequestMethod.PATCH)
-    public void sendBucks(@RequestBody Account accountFrom, @RequestBody Account accountTo, BigDecimal money) {
-         accountDao.updateAccount(accountFrom.getUser_id(),accountTo.getUser_id(),money);
+    public List<TransferView> getFromTransferView(Long id) {
+        return transferDao.getFromTransferByUserId(id);
     }
 
+    @RequestMapping(value = "/user/sendMoney", method = RequestMethod.PUT)
+    public void sendBucks(@RequestBody Transfer transfer) {
+         accountDao.updateAccount(transfer.getFromUserId(), transfer.getToUserId(), transfer.getAmount());
+         transferDao.create(transfer);
+    }
 
     @RequestMapping(value = "/user/{id}/sendList", method = RequestMethod.GET)
     public List<User> listSendUsers(@PathVariable Long id) {

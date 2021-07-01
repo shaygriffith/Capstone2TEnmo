@@ -8,4 +8,5 @@ import java.util.List;
 public interface AccountDao {
     Account getByAccountId(Long userId);
     void updateAccount(Long fromUserId, Long toUserId, BigDecimal money);
+
 }
