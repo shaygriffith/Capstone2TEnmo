@@ -5,11 +5,10 @@ import com.techelevator.tenmo.services.AuthenticationService;
 import com.techelevator.tenmo.services.AuthenticationServiceException;
 import com.techelevator.tenmo.services.BankService;
 import com.techelevator.view.ConsoleService;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -86,8 +85,73 @@ public class App {
 	}
 
 	private void viewTransferHistory() {
-		// TODO Auto-generated method stub
-		
+		System.out.println("-------------------------------------------");
+		System.out.println("Transfers");
+		System.out.format("%-15s%-20s%-30s\n", "ID", "From/To","Amount");
+		System.out.println("-------------------------------------------");
+
+
+		User user = currentUser.getUser();
+		int id = user.getId();
+		TransferView[] transferViews = null;
+		transferViews = bankService.displayTransfer(id);
+
+		for (TransferView tv : transferViews) {
+			System.out.format("%-15s%-20s$%-30s\n", tv.getTransferId(), tv.getUserType() + ": " + tv.getUsername(), tv.getAmount());
+		}
+
+		boolean loop = true;
+		while (loop) {
+			System.out.println("-----------------");
+			System.out.print("Please enter transfer ID to view details (0 to cancel): ");
+			int userInputTransferId = 0;
+			String selection = userInput.nextLine();
+			if (selection.equals("0")) {
+				mainMenu();
+			} else {
+				if (!isId(selection)) {
+					System.out.println("Not ID");
+				} else {
+					userInputTransferId = Integer.valueOf(selection);
+					TransferView[] transferDetails = bankService.displayTransferDetails(id, userInputTransferId);
+
+					if (transferDetails.length == 0) {
+						System.out.println("Wrong TransferId.");
+					} else {
+						System.out.println("--------------------------------------------");
+						System.out.println("Transfer Details");
+						System.out.println("--------------------------------------------");
+						for (TransferView detail : transferDetails) {
+							if (detail.getUserType().equals("From")) {
+								displayFromTransferDetails(user, detail);
+							}
+							if (detail.getUserType().equals("To")) {
+								displayToTransferDetails(user, detail);
+							}
+						}
+						loop = false;
+					}
+				}
+			}
+		}
+	}
+
+	private void displayFromTransferDetails(User user, TransferView detail) {
+		System.out.format("Id: " + detail.getTransferId() + "\n" +
+						  "From: " + detail.getUsername() + "\n" +
+						  "To: " + user.getUsername() + " (Me)\n" +
+				"Type: " + detail.getTransferType() + "\n" +
+				"Status: " + detail.getTransferStatus() + "\n" +
+				"Amount: $" + detail.getAmount() + "\n");
+	}
+
+	private void displayToTransferDetails(User user, TransferView detail) {
+		System.out.format("Id: " + detail.getTransferId() + "\n" +
+				"From: " + user.getUsername() + "(Me)\n" +
+				"To: " + detail.getUsername() + "\n" +
+				"Type: " + detail.getTransferType() + "\n" +
+				"Status: " + detail.getTransferStatus() + "\n" +
+				"Amount: $" + detail.getAmount() + "\n");
 	}
 
 	private void viewPendingRequests() {
@@ -104,24 +168,45 @@ public class App {
 		User user = currentUser.getUser();
 		int id = user.getId();
 		User[] userList = bankService.displaySendList(id);
-
+        List<Integer> ids = new ArrayList<>();
 		for (User u : userList) {
+			ids.add(u.getId());
 			System.out.format("%-20s%-20s\n", u.getId(), u.getUsername());
 		}
 		System.out.println("-------------------------------------------");
+		boolean loop = true;
+		while (loop) {
+			int userInputId = 0;
+			System.out.print("Enter ID of user you are sending to (0 to cancel): ");
 
-		int userInputId = 0;
-		BigDecimal userInputMoney;
-		System.out.print("Enter ID of user you are sending to (0 to cancel): ");
-
-		String selection = userInput.nextLine();
-		if (selection.equals("0")) {
-			mainMenu();
-		} else {
-			userInputId = Integer.valueOf(selection);
+			String selection = userInput.nextLine();
+			if (selection.equals("0")) {
+				mainMenu();
+			} else {
+				boolean b = isId(selection);
+				if (b) {
+					userInputId = Integer.valueOf(selection);
+					if (idIdExist(userInputId, ids)) {
+						handleTransferInput(user, id, userInputId);
+						loop = false;
+					} else {
+						System.out.println("ID not exist.");
+					}
+				} else {
+					System.out.println("Not ID");
+				}
+			}
 		}
+	}
 
-		handleTransferInput(user, id, userInputId);
+	private boolean idIdExist(int id, List<Integer> ids) {
+    	int indexOfId = -1;
+    	indexOfId = ids.indexOf(id);
+    	if (indexOfId != -1) {
+    		return true;
+		} else {
+    		return false;
+		}
 	}
 
 	private void handleTransferInput(User user, int id, int userInputId) {
@@ -131,16 +216,46 @@ public class App {
 		while (loop) {
 			System.out.print("Enter amount: ");
 			selection = userInput.nextLine();
-			double doubleMoney = Double.valueOf(selection);
-			userInputMoney = BigDecimal.valueOf(doubleMoney);
-			if (userInputMoney.compareTo(bankService.getAccount(id).getBalance()) > -1) {
-				System.out.println("Transfer Money greater than the balance. Please input again: ");
+			boolean isNumbers = isMoney(selection);
+			if (!isNumbers) {
+				System.out.println("Transfer Money just be Numbers.");
 			} else {
-				Transfer transfer = getTransfer(user, id, userInputId, userInputMoney);
-				bankService.sendBucks(transfer);
-				System.out.println("Send Successful!");
-				loop = false;
+				double doubleMoney = Double.valueOf(selection);
+
+				if (doubleMoney > bankService.getAccount(id).getBalance().doubleValue()) {
+					System.out.println("Transfer Money greater than the balance. Please input again: ");
+				} else if (doubleMoney <= 0) {
+					System.out.println("Transfer Money must greater than 0.");
+				} else {
+					userInputMoney = BigDecimal.valueOf(doubleMoney);
+					Transfer transfer = getTransfer(user, id, userInputId, userInputMoney);
+					bankService.sendBucks(transfer);
+					System.out.println("Send Successful!");
+					loop = false;
+				}
 			}
+		}
+	}
+
+	private boolean isMoney(String s) {
+    	try {
+    		double number = Double.valueOf(s);
+    		return true;
+		} catch (Exception e) {
+    		return false;
+		}
+	}
+
+	private boolean isId(String s) {
+		try {
+			int number = Integer.valueOf(s);
+			if ( number > 0 ) {
+				return true;
+			} else {
+				return false;
+			}
+		} catch (Exception e) {
+			return false;
 		}
 	}
 

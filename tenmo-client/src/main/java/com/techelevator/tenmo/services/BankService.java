@@ -2,6 +2,7 @@ package com.techelevator.tenmo.services;
 
 import com.techelevator.tenmo.model.Account;
 import com.techelevator.tenmo.model.Transfer;
+import com.techelevator.tenmo.model.TransferView;
 import com.techelevator.tenmo.model.User;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -56,6 +57,30 @@ public class BankService {
         } catch (ResourceAccessException e) {
             e.getMessage();
         }
+    }
+
+    public TransferView[] displayTransfer(int id) {
+        TransferView[] transferViews = null;
+        try {
+            transferViews = restTemplate.exchange(API_BASE_URL + "/user/" + id + "/transferview", HttpMethod.GET, makeAuthEntity(), TransferView[].class).getBody();
+        } catch (RestClientResponseException e) {
+            String.format("%s%s",e.getRawStatusCode(),e.getStatusText());
+        } catch (ResourceAccessException e) {
+            e.getMessage();
+        }
+        return transferViews;
+    }
+
+    public TransferView[] displayTransferDetails(int userId, int transferId) {
+        TransferView[] transferViews = null;
+        try {
+            transferViews = restTemplate.exchange(API_BASE_URL + "/user/" + userId + "/transferview/" + transferId, HttpMethod.GET, makeAuthEntity(), TransferView[].class).getBody();
+        } catch (RestClientResponseException e) {
+            String.format("%s%s",e.getRawStatusCode(),e.getStatusText());
+        } catch (ResourceAccessException e) {
+            e.getMessage();
+        }
+        return transferViews;
     }
 
     private HttpEntity makeAuthEntity() {

@@ -1,16 +1,15 @@
 package com.techelevator.tenmo.model;
 
 import java.math.BigDecimal;
-/**
- * This class is for storing transfer view object
- * */
+
 public class TransferView {
+
     private Long transferId;
     private String username;
+    private BigDecimal amount;
     private String userType;
     private String transferType;
     private String transferStatus;
-    private BigDecimal amount;
 
     public String getTransferType() {
         return transferType;
@@ -59,4 +58,5 @@ public class TransferView {
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
     }
+
 }

@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface TransferDao {
     void create(Transfer transfer);
-    List<TransferView>  getFromTransferByUserId(long userId);
-    List<TransferView>  getToTransferByUserId(long userId);
+    List<TransferView> getFromTransferByUserId(long userId);
+    List<TransferView> getToTransferByUserId(long userId);
+    List<TransferView> getTransferDetails(long userId, long transferId);
 }

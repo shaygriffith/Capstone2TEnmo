@@ -16,7 +16,7 @@ import com.techelevator.tenmo.dao.UserDao;
 import com.techelevator.tenmo.security.jwt.TokenProvider;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -39,8 +39,21 @@ public class AuthenticationController {
         this.transferDao = transferDao;
     }
 
-    public List<TransferView> getFromTransferView(Long id) {
-        return transferDao.getFromTransferByUserId(id);
+    @RequestMapping(value = "/user/{userId}/transferview/{transferId}", method = RequestMethod.GET)
+    public List<TransferView> getTransferDetails(@PathVariable Long userId, @PathVariable Long transferId) {
+        List<TransferView> transferDetails = new ArrayList<>();
+        transferDetails = transferDao.getTransferDetails(userId, transferId);
+        return transferDetails;
+    }
+
+    @RequestMapping(value = "/user/{id}/transferview", method = RequestMethod.GET)
+    public List<TransferView> getTransferView(@PathVariable Long id) {
+        List<TransferView> fromList = transferDao.getFromTransferByUserId(id);
+        List<TransferView> toList = transferDao.getToTransferByUserId(id);
+        List<TransferView> resultList = new ArrayList<>();
+        resultList.addAll(fromList);
+        resultList.addAll(toList);
+        return resultList;
     }
 
     @RequestMapping(value = "/user/sendMoney", method = RequestMethod.PUT)

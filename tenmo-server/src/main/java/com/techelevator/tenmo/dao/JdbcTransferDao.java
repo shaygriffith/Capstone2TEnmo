@@ -1,6 +1,5 @@
 package com.techelevator.tenmo.dao;
 
-import com.techelevator.tenmo.model.Account;
 import com.techelevator.tenmo.model.Transfer;
 import com.techelevator.tenmo.model.TransferView;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -25,10 +24,40 @@ public class JdbcTransferDao implements TransferDao{
     }
 
     @Override
+    public List<TransferView> getTransferDetails(long userId, long transferId) {
+        List<TransferView> transferDetails = new ArrayList<>();
+        String fromSql = "select  totalTable.transfer_id, totalTable.username, 'From' as usertype, totalTable.amount, totalTable.transfer_type_desc, totalTable.transfer_status_desc from " +
+                "(select * from users " +
+                "join accounts on (users.user_id = accounts.user_id) " +
+                "join transfers on (transfers.account_from = accounts.account_id) " +
+                "join transfer_types using (transfer_type_id) " +
+                "join transfer_statuses using (transfer_status_id)) as totalTable " +
+                "where totalTable.account_to = (select account_id from accounts where user_id = ?) and totalTable.transfer_id = ?;";
+        SqlRowSet fromResults = jdbcTemplate.queryForRowSet(fromSql, userId, transferId);
+        while (fromResults.next()) {
+            transferDetails.add(mapRowToTransferViewDetails(fromResults));
+        }
+
+        String toSql = "select  totalTable.transfer_id, totalTable.username, 'To' as usertype, totalTable.amount, totalTable.transfer_type_desc, totalTable.transfer_status_desc from " +
+                "(select * from users " +
+                "join accounts on (users.user_id = accounts.user_id) " +
+                "join transfers on (transfers.account_to = accounts.account_id) " +
+                "join transfer_types using (transfer_type_id) " +
+                "join transfer_statuses using (transfer_status_id)) as totalTable " +
+                "where totalTable.account_from = (select account_id from accounts where user_id = ?) and totalTable.transfer_id = ?;";
+        SqlRowSet toResults = jdbcTemplate.queryForRowSet(toSql, userId, transferId);
+        while (toResults.next()) {
+            transferDetails.add(mapRowToTransferViewDetails(toResults));
+        }
+
+        return transferDetails;
+    }
+
+    @Override
     public List<TransferView> getFromTransferByUserId(long userId) {
         List<TransferView> fromList = new ArrayList<>();
 
-        String sql = "select totalTable.transfer_id, totalTable.username, totalTable.amount from " +
+        String sql = "select totalTable.transfer_id, totalTable.username, 'From' as usertype, totalTable.amount from " +
                 "(select * from users " +
                 "join accounts on (users.user_id = accounts.user_id) " +
                 "join transfers on (transfers.account_from = accounts.account_id)) as totalTable " +
@@ -43,7 +72,7 @@ public class JdbcTransferDao implements TransferDao{
     @Override
     public List<TransferView> getToTransferByUserId(long userId) {
         List<TransferView> toList = new ArrayList<>();
-        String sql = "select totalTable.transfer_id, totalTable.username, totalTable.amount from " +
+        String sql = "select totalTable.transfer_id, totalTable.username, 'To' as usertype, totalTable.amount from " +
                 "(select * from users " +
                 "join accounts on (users.user_id = accounts.user_id) " +
                 "join transfers on (transfers.account_to = accounts.account_id)) as totalTable " +
@@ -59,6 +88,18 @@ public class JdbcTransferDao implements TransferDao{
         TransferView transferView = new TransferView();
         transferView.setTransferId(rs.getLong("transfer_id"));
         transferView.setUsername(rs.getString("username"));
+        transferView.setUserType(rs.getString("usertype"));
+        transferView.setAmount(rs.getBigDecimal("amount"));
+        return transferView;
+    }
+
+    private TransferView mapRowToTransferViewDetails(SqlRowSet rs) {
+        TransferView transferView = new TransferView();
+        transferView.setTransferId(rs.getLong("transfer_id"));
+        transferView.setUsername(rs.getString("username"));
+        transferView.setUserType(rs.getString("usertype"));
+        transferView.setTransferType(rs.getString("transfer_type_desc"));
+        transferView.setTransferStatus(rs.getString("transfer_status_desc"));
         transferView.setAmount(rs.getBigDecimal("amount"));
         return transferView;
     }
