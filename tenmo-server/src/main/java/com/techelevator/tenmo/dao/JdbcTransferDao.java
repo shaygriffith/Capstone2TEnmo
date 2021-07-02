@@ -18,6 +18,45 @@ public class JdbcTransferDao implements TransferDao{
     }
 
     @Override
+    public void updateApprove(long transferId) {
+        String sql = "update transfers set transfer_status_id = 2 where transfer_id = ?;";
+        jdbcTemplate.update(sql, transferId);
+    }
+
+    @Override
+    public Transfer getTransferByTransferId(long transferId) {
+        Transfer transfer = new Transfer();
+        String sql = "select * from transfers where transfer_id = ?;";
+        SqlRowSet result = jdbcTemplate.queryForRowSet(sql, transferId);
+        if (result.next()) {
+            transfer = mapRowToTransfer(result);
+        }
+        return transfer;
+    }
+
+    @Override
+    public void updateReject(long transferId) {
+        String sql = "update transfers set transfer_status_id = 3 where transfer_id = ?;";
+        jdbcTemplate.update(sql, transferId);
+    }
+
+    @Override
+    public List<TransferView> getPendingList(long userId) {
+        List<TransferView> pendingList = new ArrayList<>();
+
+        String sql = "select totalTable.transfer_id, totalTable.username, 'To' as usertype, totalTable.amount from " +
+                "(select * from users " +
+                "join accounts on (users.user_id = accounts.user_id) " +
+                "join transfers on (transfers.account_to = accounts.account_id)) as totalTable " +
+                "where totalTable.account_from = (select account_id from accounts where user_id = ?) and totalTable.transfer_status_id = 1;";
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, userId);
+        while (results.next()) {
+            pendingList.add(mapRowToTransferView(results));
+        }
+        return pendingList;
+    }
+
+    @Override
     public void create(Transfer transfer) {
         String sql = "insert into transfers (transfer_type_id, transfer_status_id, account_from, account_to, amount) values (?,?,?,?,?);";
         jdbcTemplate.update(sql, transfer.getTransferTypeId(), transfer.getTransferStatusId(), transfer.getFromAccountId(), transfer.getToAccountId(), transfer.getAmount());
@@ -82,6 +121,17 @@ public class JdbcTransferDao implements TransferDao{
             toList.add(mapRowToTransferView(results));
         }
         return toList;
+    }
+
+    private Transfer mapRowToTransfer(SqlRowSet rs) {
+        Transfer transfer = new Transfer();
+        transfer.setTransferId(rs.getLong("transfer_id"));
+        transfer.setTransferTypeId(rs.getLong("transfer_type_id"));
+        transfer.setTransferStatusId(rs.getLong("transfer_status_id"));
+        transfer.setFromAccountId(rs.getLong("account_from"));
+        transfer.setToAccountId(rs.getLong("account_to"));
+        transfer.setAmount(rs.getBigDecimal("amount"));
+        return transfer;
     }
 
     private TransferView mapRowToTransferView(SqlRowSet rs) {

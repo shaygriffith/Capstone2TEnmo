@@ -39,6 +39,33 @@ public class AuthenticationController {
         this.transferDao = transferDao;
     }
 
+    @RequestMapping(value = "/user/pendingapprove/", method = RequestMethod.PUT)
+    public void pendingApprove(@RequestBody Transfer transfer) {
+        transferDao.updateApprove(transfer.getTransferId());
+        accountDao.updateAccountById(transfer.getFromAccountId(), transfer.getToAccountId(), transfer.getAmount());
+    }
+
+    @RequestMapping(value = "/transfer/{transferId}", method = RequestMethod.GET)
+    public Transfer getTransferByTransferId(@PathVariable long transferId) {
+        return transferDao.getTransferByTransferId(transferId);
+    }
+
+    @RequestMapping(value = "/account/{transferId}", method = RequestMethod.GET)
+    public Account getAccountByTransferId(@PathVariable long transferId) {
+        return accountDao.getAccountBytransferId(transferId);
+    }
+
+    @RequestMapping(value = "/user/pendingreject/{id}", method = RequestMethod.POST)
+    public void pendingReject(@PathVariable long id) {
+        transferDao.updateReject(id);
+    }
+
+    @RequestMapping(value = "/user/{id}/pendingreview", method = RequestMethod.GET)
+    public List<TransferView> getPendingList(@PathVariable Long id) {
+        List<TransferView> pendingList = transferDao.getPendingList(id);
+        return pendingList;
+    }
+
     @RequestMapping(value = "/user/{userId}/transferview/{transferId}", method = RequestMethod.GET)
     public List<TransferView> getTransferDetails(@PathVariable Long userId, @PathVariable Long transferId) {
         List<TransferView> transferDetails = new ArrayList<>();
@@ -60,6 +87,11 @@ public class AuthenticationController {
     public void sendBucks(@RequestBody Transfer transfer) {
          accountDao.updateAccount(transfer.getFromUserId(), transfer.getToUserId(), transfer.getAmount());
          transferDao.create(transfer);
+    }
+
+    @RequestMapping(value = "/user/requestMoney", method = RequestMethod.POST)
+    public void requestBucks(@RequestBody Transfer transfer) {
+        transferDao.create(transfer);
     }
 
     @RequestMapping(value = "/user/{id}/sendList", method = RequestMethod.GET)

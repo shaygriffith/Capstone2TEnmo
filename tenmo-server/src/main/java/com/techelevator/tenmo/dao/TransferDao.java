@@ -10,4 +10,8 @@ public interface TransferDao {
     List<TransferView> getFromTransferByUserId(long userId);
     List<TransferView> getToTransferByUserId(long userId);
     List<TransferView> getTransferDetails(long userId, long transferId);
+    List<TransferView> getPendingList(long userId);
+    void updateReject(long transferId);
+    Transfer getTransferByTransferId(long transferId);
+    void updateApprove(long transferId);
 }

@@ -12,8 +12,6 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
-import java.math.BigDecimal;
-import java.util.List;
 
 public class BankService {
     public static String AUTH_TOKEN = "";
@@ -22,6 +20,72 @@ public class BankService {
 
     public BankService(String api_base_url) {
         API_BASE_URL = api_base_url;
+    }
+
+    public void pendingApprove(Transfer transfer) {
+        try {
+            restTemplate.exchange(API_BASE_URL + "/user/pendingapprove/", HttpMethod.PUT, makeTransferEntity(transfer), Transfer.class);
+        } catch (RestClientResponseException e) {
+            String.format("%s%s",e.getRawStatusCode(),e.getStatusText());
+        } catch (ResourceAccessException e) {
+            e.getMessage();
+        }
+    }
+
+    public Transfer getTranserByTransferId(int id) {
+        Transfer transfer = new Transfer();
+        try {
+            transfer = restTemplate.exchange(API_BASE_URL + "/transfer/" + id, HttpMethod.GET, makeAuthEntity(), Transfer.class).getBody();
+        } catch (RestClientResponseException e) {
+            String.format("%s%s",e.getRawStatusCode(),e.getStatusText());
+        } catch (ResourceAccessException e) {
+            e.getMessage();
+        }
+        return transfer;
+    }
+
+    public Account getAccountByTransferId(int id) {
+        Account account = new Account();
+        try {
+            account = restTemplate.exchange(API_BASE_URL + "/account/" + id, HttpMethod.GET, makeAuthEntity(), Account.class).getBody();
+        } catch (RestClientResponseException e) {
+            String.format("%s%s",e.getRawStatusCode(),e.getStatusText());
+        } catch (ResourceAccessException e) {
+            e.getMessage();
+        }
+        return account;
+    }
+
+    public void pendingReject(int id) {
+        try {
+            restTemplate.exchange(API_BASE_URL + "/user/pendingreject/" + id, HttpMethod.POST, makeAuthEntity(), Transfer.class);
+        } catch (RestClientResponseException e) {
+            String.format("%s%s",e.getRawStatusCode(),e.getStatusText());
+        } catch (ResourceAccessException e) {
+            e.getMessage();
+        }
+    }
+
+    public TransferView[] getPendingList(int id) {
+        TransferView[] pendingList = null;
+        try {
+            pendingList = restTemplate.exchange(API_BASE_URL + "/user/" + id + "/pendingreview", HttpMethod.GET, makeAuthEntity(), TransferView[].class).getBody();
+        } catch (RestClientResponseException e) {
+            String.format("%s%s",e.getRawStatusCode(),e.getStatusText());
+        } catch (ResourceAccessException e) {
+            e.getMessage();
+        }
+        return pendingList;
+    }
+
+    public void requestBucks(Transfer transfer) {
+        try {
+            restTemplate.exchange(API_BASE_URL + "/user/requestMoney", HttpMethod.POST, makeTransferEntity(transfer), Transfer.class);
+        } catch (RestClientResponseException e) {
+            String.format("%s%s",e.getRawStatusCode(),e.getStatusText());
+        } catch (ResourceAccessException e) {
+            e.getMessage();
+        }
     }
 
     public Account getAccount(int id) {
@@ -49,7 +113,6 @@ public class BankService {
     }
 
     public void sendBucks(Transfer transfer) {
-
         try {
             restTemplate.exchange(API_BASE_URL + "/user/sendMoney", HttpMethod.PUT, makeTransferEntity(transfer), Transfer.class);
         } catch (RestClientResponseException e) {
