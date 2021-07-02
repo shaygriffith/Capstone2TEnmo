@@ -1,4 +1,4 @@
-package com.techelevator.tenmo.dao;
+ package com.techelevator.tenmo.dao;
 
 import com.techelevator.tenmo.model.BankAccount;
 import com.techelevator.tenmo.model.User;
@@ -15,5 +15,5 @@ public interface UserDao {
 
     boolean create(String username, String password);
 
-    BankAccount get(double balance);
+    List<User> listSendUsers(Long userId);
 }
