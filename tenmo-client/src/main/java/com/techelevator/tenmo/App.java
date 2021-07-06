@@ -428,11 +428,15 @@ public class App {
 			System.out.println("Transfer Money just be Numbers.");
 		} else {
 			double doubleMoney = Double.valueOf(selection);
-			BigDecimal userInputMoney = BigDecimal.valueOf(doubleMoney);
-			Transfer transfer = getTransferForRequest(user, id, userInputId, userInputMoney);
-			bankService.requestBucks(transfer);
-			System.out.println("Request Successful!");
-			return false;
+			if (doubleMoney > 0) {
+				BigDecimal userInputMoney = BigDecimal.valueOf(doubleMoney);
+				Transfer transfer = getTransferForRequest(user, id, userInputId, userInputMoney);
+				bankService.requestBucks(transfer);
+				System.out.println("Request Successful!");
+				return false;
+			} else {
+				System.out.println("Request Money must greater than 0!");
+			}
 		}
 		return true;
 	}
