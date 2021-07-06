@@ -14,10 +14,9 @@ public class JdbcAccountDao implements AccountDao{
 
     private JdbcTemplate jdbcTemplate;
 
-   /* public JdbcAccountDao(JdbcTemplate jdbcTemplate) {
+    public JdbcAccountDao(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-    }*/
-   public JdbcAccountDao(DataSource dataSource) {this.jdbcTemplate = new JdbcTemplate(dataSource);}
+    }
 
     @Override
     public void updateAccountById(Long fromAccountId, Long toAccountId, BigDecimal money) {

@@ -12,6 +12,19 @@ public class TransferView {
     private String transferStatus;
     private BigDecimal amount;
 
+    public TransferView() {
+
+    }
+
+    public TransferView(Long transferId, String username, String userType, String transferType, String transferStatus, BigDecimal amount) {
+        this.transferId = transferId;
+        this.username = username;
+        this.userType = userType;
+        this.transferType = transferType;
+        this.transferStatus = transferStatus;
+        this.amount = amount;
+    }
+
     public String getTransferType() {
         return transferType;
     }

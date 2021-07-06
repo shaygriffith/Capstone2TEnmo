@@ -3,6 +3,7 @@ package com.techelevator.tenmo.dao.tenmo.dao;
 import com.techelevator.tenmo.dao.tenmo.model.TransferView;
 import com.techelevator.tenmo.dao.tenmo.model.Transfer;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.SqlInOutParameter;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
 
@@ -57,9 +58,11 @@ public class JdbcTransferDao implements TransferDao{
     }
 
     @Override
-    public void create(Transfer transfer) {
+    public int create(Transfer transfer) {
+        Transfer transfer1 = new Transfer();
         String sql = "insert into transfers (transfer_type_id, transfer_status_id, account_from, account_to, amount) values (?,?,?,?,?);";
-        jdbcTemplate.update(sql, transfer.getTransferTypeId(), transfer.getTransferStatusId(), transfer.getFromAccountId(), transfer.getToAccountId(), transfer.getAmount());
+        int result = jdbcTemplate.update(sql, transfer.getTransferTypeId(), transfer.getTransferStatusId(), transfer.getFromAccountId(), transfer.getToAccountId(), transfer.getAmount());
+        return result;
     }
 
     @Override
